@@ -1,5 +1,6 @@
 import Plebbit from '@plebbit/plebbit-js';
 import { SubplebbitType as Subplebbit } from '@plebbit/plebbit-js/dist/node/subplebbit/types.js';
+import { getDefaultSubplebbitsAddresses } from '../utils/get-default-subplebbits.js';
 
 const plebbit = await Plebbit({
   ipfsGatewayUrls: [
@@ -16,20 +17,64 @@ const plebbit = await Plebbit({
   ],
 });
 
+let statsCache = {};
+let isCacheReady = false;
+
+async function updateStatsCache() {
+  console.log("Updating stats cache...");
+  try {
+    const subplebbitAddresses = await getDefaultSubplebbitsAddresses();
+    if (!subplebbitAddresses || subplebbitAddresses.length === 0) {
+      console.error('No subplebbit addresses found or failed to fetch.');
+      return;
+    }
+
+    const statsPromises = subplebbitAddresses.map(address => fetchSubplebbitStats(address));
+    const statsResults = await Promise.all(statsPromises);
+    console.log("Stats results:", statsResults);
+
+    const newStatsObject = statsResults.reduce((acc: any, stats, index) => {
+      if (stats) {
+        acc[subplebbitAddresses[index]] = stats;
+      }
+      return acc;
+    }, {});
+
+    statsCache = newStatsObject;
+    isCacheReady = true;
+    console.log("Stats cache updated successfully.");
+  } catch (error) {
+    console.error('Failed to update stats cache:', error);
+  }
+}
+
+updateStatsCache();
+setInterval(updateStatsCache, 30000);
+
+export function getCachedStats() {
+  if (!isCacheReady) {
+    throw new Error('Stats are currently updating. Please try again shortly.');
+  }
+  return statsCache;
+}
+
 export async function fetchSubplebbitStats(subplebbitAddress: string) {
   try {
     const subplebbit = await plebbit.getSubplebbit(subplebbitAddress) as Subplebbit;
     if (!subplebbit) {
-        console.log('No subplebbit found with address: ' + subplebbitAddress);
-        throw new Error('No subplebbit found with address: ' + subplebbitAddress);
+        console.error('No subplebbit found with address:', subplebbitAddress);
+        return null;
     } else if (!subplebbit.statsCid) {
-        console.log('No statsCid found for subplebbit with address: ' + subplebbitAddress);
-        throw new Error('No statsCid found for subplebbit with address: ' + subplebbitAddress);
+        console.error('No statsCid found for subplebbit with address:', subplebbitAddress);
+        return null;
     }
     const stats = await plebbit.fetchCid(subplebbit.statsCid);
     return stats;
-
   } catch (error) {
-    console.error('Error fetching subplebbit:', error);
+    console.error('Error fetching subplebbit stats for address:', subplebbitAddress, error);
+    return null;
   }
 }
+
+
+export { updateStatsCache };

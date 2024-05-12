@@ -1,28 +1,15 @@
 import { Request, Response } from 'express';
-import { fetchSubplebbitStats } from '../services/plebbit.service.js';
-import { getDefaultSubplebbits } from '../utils/get-default-subplebbits.js';
-import { MultisubSubplebbit } from '../models/multisub-subplebbit.js';
+import { getCachedStats } from '../services/plebbit.service.js';
 
 export async function getStats(req: Request, res: Response) {
-    try {
-        const subplebbits = await getDefaultSubplebbits();
-        if (!subplebbits) {
-            throw new Error('Failed to fetch default subplebbits');
-        }
-        
-        const statsPromises = subplebbits.map(subplebbit => fetchSubplebbitStats(subplebbit.address));
-        const statsResults = await Promise.all(statsPromises);
-        const statsObject = statsResults.reduce((acc: any, result: any) => {
-            if (result) {
-                acc[result.address] = result.stats; // Use address as key
-            }
-            return acc;
-        }, {});
-
-        res.json(statsObject); // Send the constructed object
-
-    } catch (error) {
-        console.error('Failed to fetch stats:', error);
-        res.status(500).send('Failed to fetch stats');
+  try {
+    const statsObject = getCachedStats();
+    if (Object.keys(statsObject).length === 0) {
+      throw new Error('Stats are currently updating. Please try again shortly.');
     }
+    res.json(statsObject);
+  } catch (error) {
+    console.error('Failed to serve stats:', error);
+    res.status(500).send('Failed to fetch stats');
+  }
 }

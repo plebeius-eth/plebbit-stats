@@ -2,7 +2,7 @@ import { MultisubSubplebbit } from "src/models/multisub-subplebbit.js";
 
 let cache: MultisubSubplebbit[] | null = null;
 
-export async function getDefaultSubplebbits() {
+async function getDefaultSubplebbits() {
   if (cache) {
     return cache;
   }
@@ -15,4 +15,12 @@ export async function getDefaultSubplebbits() {
     console.error('Failed to fetch default subplebbits:', e);
     return [];
   }
+}
+
+export async function getDefaultSubplebbitsAddresses() {
+  const subplebbits = await getDefaultSubplebbits();
+  if (!subplebbits) {
+    return [];
+  }
+  return subplebbits.map(subplebbit => subplebbit.address);
 }
