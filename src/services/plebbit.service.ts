@@ -31,7 +31,6 @@ async function updateStatsCache() {
 
     const statsPromises = subplebbitAddresses.map(address => fetchSubplebbitStats(address));
     const statsResults = await Promise.all(statsPromises);
-    console.log("Stats results:", statsResults);
 
     const newStatsObject = statsResults.reduce((acc: any, stats, index) => {
       if (stats) {
@@ -65,11 +64,14 @@ export async function fetchSubplebbitStats(subplebbitAddress: string) {
         console.error('No subplebbit found with address:', subplebbitAddress);
         return null;
     } else if (!subplebbit.statsCid) {
-        console.error('No statsCid found for subplebbit with address:', subplebbitAddress);
-        return null;
+      console.error('No statsCid found for subplebbit with address:', subplebbitAddress);
+      return null;
     }
-    const stats = await plebbit.fetchCid(subplebbit.statsCid);
-    return stats;
+    
+    const statsJson = await plebbit.fetchCid(subplebbit.statsCid);
+    const stats = JSON.parse(statsJson);
+    return { stats };
+
   } catch (error) {
     console.error('Error fetching subplebbit stats for address:', subplebbitAddress, error);
     return null;
