@@ -26,8 +26,8 @@ async function startServer() {
     await updateStatsCache();
 
     // add paths to ssl key and certificate to .env file
-    const privateKey = fs.readFileSync(process.env.SSL_PRIVATE_KEY_PATH, 'utf8');
-    const certificate = fs.readFileSync(process.env.SSL_CERTIFICATE_PATH, 'utf8');
+    const privateKey = fs.readFileSync(process.env.SSL_PRIVATE_KEY_PATH!, 'utf8');
+    const certificate = fs.readFileSync(process.env.SSL_CERTIFICATE_PATH!, 'utf8');
 
     const credentials = { key: privateKey, cert: certificate };
 
